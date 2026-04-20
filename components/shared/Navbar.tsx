@@ -127,7 +127,7 @@ export function Navbar() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-red-600 cursor-pointer"
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      onClick={() => signOut({ callbackUrl: window.location.origin })}
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       {t.nav.signOut}
@@ -177,7 +177,7 @@ export function Navbar() {
                 <Link href="/dashboard/listings" className="block px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">{t.nav.myListings}</Link>
                 <Link href="/dashboard/favorites" className="block px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">{t.nav.savedProperties}</Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => signOut({ callbackUrl: window.location.origin })}
                   className="block w-full text-left px-2 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
                 >
                   {t.nav.signOut}
