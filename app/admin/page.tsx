@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { AdminDashboardClient } from "@/components/admin/AdminDashboardClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const [totalUsers, totalProperties, pendingCount, activeCount] = await Promise.all([
     prisma.user.count(),
