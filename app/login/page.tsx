@@ -39,7 +39,7 @@ function LoginContent() {
     if (res?.error) {
       toast.error("Invalid email or password");
     } else {
-      toast.success(t.auth.welcome);
+      toast.success(t.auth.welcome, { duration: 1500 });
       router.push(callbackUrl);
       router.refresh();
     }
