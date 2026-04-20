@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      String   @default("BUYER")
+  image     String?
+  createdAt DateTime @default(now())
+
+  properties       Property[]
+  favorites        Favorite[]
+  sentMessages     Message[]  @relation("SentMessages")
+  receivedMessages Message[]  @relation("ReceivedMessages")
+  sessions         Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Property {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  propertyType    String
+  transactionType String
+  price           Float
+  bedrooms        Int
+  bathrooms       Float
+  squareFeet      Int?
+  address         String
+  city            String
+  latitude        Float?
+  longitude       Float?
+  status          String   @default("PENDING")
+  images          String
+  amenities       String
+  yearBuilt       Int?
+  furnishing      String?
+  parkingSpaces   Int?
+  floorNumber     Int?
+  ownerId         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner     User       @relation(fields: [ownerId], references: [id])
+  favorites Favorite[]
+  messages  Message[]
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  propertyId String
+  senderId   String
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id])
+  sender   User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
