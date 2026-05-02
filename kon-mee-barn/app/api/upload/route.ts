@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
     Key: key,
     Body: buffer,
     ContentType: file.type,
-    ACL: "public-read",
   }));
 
   return NextResponse.json({ url: `/api/images/${key}` });
