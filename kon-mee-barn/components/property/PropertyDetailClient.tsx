@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   MapPin, Bed, Bath, Square, Heart, Phone, ChevronLeft, ChevronRight,
-  Share2, Building2, ShieldCheck, X, Car, Calendar, Layers, Sofa
+  Share2, Building2, ShieldCheck, X, Car, Calendar, Layers, Sofa, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,8 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const [images, setImages] = useState<string[]>(() => { try { return JSON.parse(property.images); } catch { return []; } });
+  const [markedForDelete, setMarkedForDelete] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
   const amenities: string[] = (() => { try { return JSON.parse(property.amenities); } catch { return []; } })();
   const thumb = (i: number) => images[i] ?? "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800";
   const canManage = userRole === "ADMIN" || userId === property.ownerId;
@@ -87,23 +89,41 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
     finally { setSending(false); }
   }
 
-  async function deleteImage(imageUrl: string) {
+  function toggleMark(imageUrl: string) {
+    setMarkedForDelete((prev) => {
+      const next = new Set(prev);
+      next.has(imageUrl) ? next.delete(imageUrl) : next.add(imageUrl);
+      return next;
+    });
+  }
+
+  function discardChanges() {
+    setMarkedForDelete(new Set());
+  }
+
+  async function saveChanges() {
+    setSaving(true);
     try {
-      const res = await fetch(`/api/properties/${property.id}/images`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl }),
-      });
-      if (res.ok) {
-        const { images: newImages } = await res.json();
-        setImages(newImages);
-        setCurrentImage((i) => Math.min(i, Math.max(0, newImages.length - 1)));
-        toast.success("Image deleted");
-      } else {
-        toast.error("Failed to delete image");
+      let remaining = [...images];
+      for (const imageUrl of markedForDelete) {
+        const res = await fetch(`/api/properties/${property.id}/images`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl }),
+        });
+        if (res.ok) {
+          const { images: newImages } = await res.json();
+          remaining = newImages;
+        }
       }
+      setImages(remaining);
+      setCurrentImage((i) => Math.min(i, Math.max(0, remaining.length - 1)));
+      setMarkedForDelete(new Set());
+      toast.success("Changes saved");
     } catch {
       toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -143,6 +163,22 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
         </div>
       )}
 
+      {/* Save / discard banner */}
+      {canManage && markedForDelete.size > 0 && (
+        <div className="flex items-center justify-between gap-4 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-sm text-red-700 font-medium">
+            {markedForDelete.size} photo{markedForDelete.size > 1 ? "s" : ""} marked for deletion
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={discardChanges}>Discard</Button>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={saveChanges} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/" className="hover:text-primary">{t.property.home}</Link>
@@ -162,11 +198,16 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
             <img src={thumb(currentImage)} alt={property.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
             {canManage && images.length > 0 && (
               <button
-                onClick={(e) => { e.stopPropagation(); deleteImage(images[currentImage]); }}
-                className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow"
+                onClick={(e) => { e.stopPropagation(); toggleMark(images[currentImage]); }}
+                className={`absolute top-3 left-3 flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg shadow transition-colors ${markedForDelete.has(images[currentImage]) ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-red-500 text-white hover:bg-red-600"}`}
               >
-                <X className="w-3 h-3" /> Delete photo
+                <X className="w-3 h-3" /> {markedForDelete.has(images[currentImage]) ? "Unmark" : "Mark for delete"}
               </button>
+            )}
+            {markedForDelete.has(images[currentImage]) && (
+              <div className="absolute inset-0 bg-red-900/40 flex items-center justify-center pointer-events-none">
+                <span className="text-white text-sm font-semibold bg-red-600/80 px-3 py-1 rounded-full">Marked for deletion</span>
+              </div>
             )}
             {images.length > 1 && (
               <>
@@ -192,13 +233,13 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
               {images.map((img, i) => (
                 <div key={i} className="relative flex-shrink-0 group">
                   <button onClick={() => { setCurrentImage(i); openLightbox(i); }}
-                    className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === currentImage ? "border-primary" : "border-transparent hover:border-gray-300"}`}>
+                    className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${markedForDelete.has(img) ? "border-red-400 opacity-50" : i === currentImage ? "border-primary" : "border-transparent hover:border-gray-300"}`}>
                     <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                   {canManage && (
                     <button
-                      onClick={() => deleteImage(img)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full items-center justify-center hidden group-hover:flex hover:bg-red-600 shadow"
+                      onClick={() => toggleMark(img)}
+                      className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex shadow ${markedForDelete.has(img) ? "bg-gray-500 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"} text-white`}
                     >
                       <X className="w-3 h-3" />
                     </button>

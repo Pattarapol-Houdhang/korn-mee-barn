@@ -49,7 +49,7 @@ export default function AdminListingsPage() {
       </div>
 
       <div className="flex gap-2 mb-6">
-        {["PENDING", "ACTIVE", "DRAFT"].map((s) => (
+        {["ALL", "PENDING", "ACTIVE", "DRAFT"].map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
@@ -84,6 +84,7 @@ export default function AdminListingsPage() {
                     <span className="text-xs text-gray-400">{(t.labels?.propertyTypes as any)?.[p.propertyType] ?? p.propertyType}</span>
                     <span className="text-xs text-gray-400">{(t.labels?.transactionTypes as any)?.[p.transactionType] ?? p.transactionType}</span>
                     <span className="text-xs text-gray-400">{formatDate(p.createdAt)}</span>
+                    {filter === "ALL" && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.status === "ACTIVE" ? "bg-green-100 text-green-700" : p.status === "PENDING" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}>{p.status}</span>}
                   </div>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-1">{t.admin.owner}: {p.owner?.name ?? "Unknown"}</p>
                 </div>
@@ -91,7 +92,7 @@ export default function AdminListingsPage() {
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/properties/${p.id}`} target="_blank"><Eye className="w-4 h-4" /></Link>
                   </Button>
-                  {filter === "PENDING" && (
+                  {(filter === "PENDING" || (filter === "ALL" && p.status === "PENDING")) && (
                     <>
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 h-8" onClick={() => action(p.id, "approve")}>
                         <Check className="w-4 h-4 mr-1" />{t.admin.approve}

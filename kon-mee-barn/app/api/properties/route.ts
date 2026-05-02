@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status") ?? "ACTIVE";
   const sort = searchParams.get("sort") ?? "newest";
 
-  const where: any = { status };
+  const where: any = status === "ALL" ? {} : { status };
 
   if (city && city !== "all") where.city = city;
   if (type && type !== "all") where.transactionType = type;
