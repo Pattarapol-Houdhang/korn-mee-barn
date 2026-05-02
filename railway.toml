@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "cd /app/kon-mee-barn && npx prisma db push && npm start"
+startCommand = "cd /app/kon-mee-barn && npx prisma db push && node_modules/.bin/next start -p ${PORT:-3000}"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

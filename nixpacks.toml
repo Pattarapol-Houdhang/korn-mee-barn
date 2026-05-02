@@ -5,4 +5,4 @@ cmds = ["npm --prefix kon-mee-barn ci"]
 cmds = ["npm --prefix kon-mee-barn run build"]
 
 [start]
-cmd = "cd kon-mee-barn && npx prisma db push && npm start"
+cmd = "cd kon-mee-barn && npx prisma db push && node_modules/.bin/next start -p ${PORT:-3000}"
