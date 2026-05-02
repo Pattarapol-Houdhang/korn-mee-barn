@@ -39,9 +39,10 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const images: string[] = (() => { try { return JSON.parse(property.images); } catch { return []; } })();
+  const [images, setImages] = useState<string[]>(() => { try { return JSON.parse(property.images); } catch { return []; } });
   const amenities: string[] = (() => { try { return JSON.parse(property.amenities); } catch { return []; } })();
   const thumb = (i: number) => images[i] ?? "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800";
+  const canManage = userRole === "ADMIN" || userId === property.ownerId;
 
   const openLightbox = (i: number) => { setLightboxIndex(i); setLightboxOpen(true); };
 
@@ -84,6 +85,26 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
       else toast.error("Failed to send message");
     } catch { toast.error("Something went wrong"); }
     finally { setSending(false); }
+  }
+
+  async function deleteImage(imageUrl: string) {
+    try {
+      const res = await fetch(`/api/properties/${property.id}/images`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
+      });
+      if (res.ok) {
+        const { images: newImages } = await res.json();
+        setImages(newImages);
+        setCurrentImage((i) => Math.min(i, Math.max(0, newImages.length - 1)));
+        toast.success("Image deleted");
+      } else {
+        toast.error("Failed to delete image");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    }
   }
 
   const furnishingLabel = (v: string) => ({ FULLY_FURNISHED: t.listing.fullyFurnished, SEMI_FURNISHED: t.listing.semiFurnished, UNFURNISHED: t.listing.unfurnished }[v] ?? v);
@@ -139,6 +160,14 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
           {/* Main image */}
           <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-[16/10] cursor-zoom-in" onClick={() => openLightbox(currentImage)}>
             <img src={thumb(currentImage)} alt={property.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+            {canManage && images.length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); deleteImage(images[currentImage]); }}
+                className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow"
+              >
+                <X className="w-3 h-3" /> Delete photo
+              </button>
+            )}
             {images.length > 1 && (
               <>
                 <button onClick={(e) => { e.stopPropagation(); setCurrentImage((i) => (i - 1 + images.length) % images.length); }} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow hover:bg-white">
@@ -161,10 +190,20 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {images.map((img, i) => (
-                <button key={i} onClick={() => { setCurrentImage(i); openLightbox(i); }}
-                  className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === currentImage ? "border-primary" : "border-transparent hover:border-gray-300"}`}>
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
+                <div key={i} className="relative flex-shrink-0 group">
+                  <button onClick={() => { setCurrentImage(i); openLightbox(i); }}
+                    className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === currentImage ? "border-primary" : "border-transparent hover:border-gray-300"}`}>
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                  {canManage && (
+                    <button
+                      onClick={() => deleteImage(img)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full items-center justify-center hidden group-hover:flex hover:bg-red-600 shadow"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
