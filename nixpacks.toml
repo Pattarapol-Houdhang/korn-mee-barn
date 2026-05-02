@@ -1,0 +1,8 @@
+[phases.install]
+cmds = ["npm --prefix kon-mee-barn ci"]
+
+[phases.build]
+cmds = ["npm --prefix kon-mee-barn run build"]
+
+[start]
+cmd = "cd kon-mee-barn && npx prisma db push && npm start"
