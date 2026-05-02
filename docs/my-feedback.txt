@@ -1,0 +1,5 @@
+1.i want to change fillter session in landing page can you modify it to modern design.
+2.When have message i want notification for seller.
+3.i want secordary color it match wiht  primary color can you suggest me and change the sytle web.
+4.i want more deatil when create the new post list.
+5.I want to see image on properties detail as modal.
