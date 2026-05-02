@@ -105,7 +105,7 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
     setSaving(true);
     try {
       let remaining = [...images];
-      for (const imageUrl of markedForDelete) {
+      for (const imageUrl of Array.from(markedForDelete)) {
         const res = await fetch(`/api/properties/${property.id}/images`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
