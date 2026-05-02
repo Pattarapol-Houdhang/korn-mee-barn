@@ -92,7 +92,7 @@ export function PropertyDetailClient({ property, userId, userRole, isFavorited: 
   function toggleMark(imageUrl: string) {
     setMarkedForDelete((prev) => {
       const next = new Set(prev);
-      next.has(imageUrl) ? next.delete(imageUrl) : next.add(imageUrl);
+      if (next.has(imageUrl)) { next.delete(imageUrl); } else { next.add(imageUrl); }
       return next;
     });
   }

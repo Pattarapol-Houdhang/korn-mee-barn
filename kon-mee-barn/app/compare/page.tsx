@@ -106,20 +106,20 @@ export default function ComparePage() {
           <Row label={t.property.type} values={properties.map((p) => (t.labels?.propertyTypes as any)?.[p.propertyType] ?? p.propertyType)} />
           <Row label={t.search.transaction} values={properties.map((p) => (t.labels?.transactionTypes as any)?.[p.transactionType] ?? p.transactionType)} />
           <Row label={t.search.city} values={properties.map((p) => (
-            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-gray-400" />{p.city}</span>
+            <span key={p.id} className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-gray-400" />{p.city}</span>
           ))} />
           <Row label={t.property.bedrooms} values={properties.map((p) => (
-            <span className="flex items-center gap-1"><Bed className="w-3.5 h-3.5 text-gray-400" />{p.bedrooms}</span>
+            <span key={p.id} className="flex items-center gap-1"><Bed className="w-3.5 h-3.5 text-gray-400" />{p.bedrooms}</span>
           ))} />
           <Row label={t.property.bathrooms} values={properties.map((p) => (
-            <span className="flex items-center gap-1"><Bath className="w-3.5 h-3.5 text-gray-400" />{p.bathrooms}</span>
+            <span key={p.id} className="flex items-center gap-1"><Bath className="w-3.5 h-3.5 text-gray-400" />{p.bathrooms}</span>
           ))} />
           <Row label={t.property.sqft} values={properties.map((p) => p.squareFeet ? (
-            <span className="flex items-center gap-1"><Square className="w-3.5 h-3.5 text-gray-400" />{p.squareFeet.toLocaleString()}</span>
-          ) : <Minus className="w-4 h-4 text-gray-300" />)} />
-          <Row label={t.listing.yearBuilt} values={properties.map((p) => p.yearBuilt ?? <Minus className="w-4 h-4 text-gray-300" />)} />
-          <Row label={t.listing.floorNumber} values={properties.map((p) => p.floorNumber ?? <Minus className="w-4 h-4 text-gray-300" />)} />
-          <Row label={t.listing.parkingSpaces} values={properties.map((p) => p.parkingSpaces ?? <Minus className="w-4 h-4 text-gray-300" />)} />
+            <span key={p.id} className="flex items-center gap-1"><Square className="w-3.5 h-3.5 text-gray-400" />{p.squareFeet.toLocaleString()}</span>
+          ) : <Minus key={p.id} className="w-4 h-4 text-gray-300" />)} />
+          <Row label={t.listing.yearBuilt} values={properties.map((p) => <span key={p.id}>{p.yearBuilt ?? <Minus className="w-4 h-4 text-gray-300" />}</span>)} />
+          <Row label={t.listing.floorNumber} values={properties.map((p) => <span key={p.id}>{p.floorNumber ?? <Minus className="w-4 h-4 text-gray-300" />}</span>)} />
+          <Row label={t.listing.parkingSpaces} values={properties.map((p) => <span key={p.id}>{p.parkingSpaces ?? <Minus className="w-4 h-4 text-gray-300" />}</span>)} />
           <Row label={t.listing.furnishing} values={properties.map((p) => furnishingLabel(p.furnishing))} />
           <Row label={t.property.listedBy} values={properties.map((p) => p.owner?.name ?? "—")} />
 
@@ -134,8 +134,8 @@ export default function ComparePage() {
                   key={amenity}
                   label={amenity}
                   values={properties.map((p) => getAmenities(p).includes(amenity)
-                    ? <Check className="w-4 h-4 text-primary" />
-                    : <Minus className="w-4 h-4 text-gray-300" />
+                    ? <Check key={p.id} className="w-4 h-4 text-primary" />
+                    : <Minus key={p.id} className="w-4 h-4 text-gray-300" />
                   )}
                 />
               ))}
