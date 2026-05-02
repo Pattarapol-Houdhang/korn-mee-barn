@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Navbar />
               <main className="min-h-[calc(100vh-64px)]">{children}</main>
               <CompareTray />
-              <Toaster richColors position="top-right" />
+              <Toaster richColors position="bottom-right" />
             </CompareProvider>
           </LanguageProvider>
         </SessionProvider>
