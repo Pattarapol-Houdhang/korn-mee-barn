@@ -43,7 +43,6 @@ export function ListingForm({ property }: Props) {
   const { t } = useLanguage();
   const isEditing = !!property;
   const [loading, setLoading] = useState(false);
-  const [uploadingCount, setUploadingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
     property ? (() => { try { return JSON.parse(property.amenities); } catch { return []; } })() : []
@@ -51,6 +50,7 @@ export function ListingForm({ property }: Props) {
   const [images, setImages] = useState<string[]>(
     property ? (() => { try { return JSON.parse(property.images); } catch { return []; } })() : []
   );
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; previewUrl: string }[]>([]);
   const [propertyType, setPropertyType] = useState(property?.propertyType ?? "");
   const [transactionType, setTransactionType] = useState(property?.transactionType ?? "");
   const [city, setCity] = useState(property?.city ?? "");
@@ -80,31 +80,50 @@ export function ListingForm({ property }: Props) {
     setSelectedAmenities((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    const toUpload = files.slice(0, 10 - images.length);
-    setUploadingCount(toUpload.length);
-    const uploaded: string[] = [];
-    for (const file of toUpload) {
+    const slots = 10 - images.length - pendingFiles.length;
+    const toAdd = files.slice(0, slots);
+    setPendingFiles((prev) => [
+      ...prev,
+      ...toAdd.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
+    ]);
+    e.target.value = "";
+  }
+
+  function removePending(i: number) {
+    URL.revokeObjectURL(pendingFiles[i].previewUrl);
+    setPendingFiles((prev) => prev.filter((_, j) => j !== i));
+  }
+
+  async function onSubmit(data: FormData, saveAsDraft = false) {
+    setLoading(true);
+
+    // Upload pending files first
+    const newUrls: string[] = [];
+    for (const { file } of pendingFiles) {
       const fd = new FormData();
       fd.append("file", file);
       try {
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         const json = await res.json();
-        if (res.ok) uploaded.push(json.url);
-        else toast.error(json.error ?? "Upload failed");
+        if (res.ok) newUrls.push(json.url);
+        else {
+          toast.error(json.error ?? "Upload failed");
+          setLoading(false);
+          return;
+        }
       } catch {
         toast.error("Upload failed");
+        setLoading(false);
+        return;
       }
-      setUploadingCount((n) => n - 1);
     }
-    setImages((prev) => [...prev, ...uploaded]);
-    e.target.value = "";
-  }
+    pendingFiles.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    setPendingFiles([]);
+    const allImages = [...images, ...newUrls];
 
-  async function onSubmit(data: FormData, saveAsDraft = false) {
-    setLoading(true);
     const payload = {
       ...data,
       price: parseFloat(data.price),
@@ -115,7 +134,7 @@ export function ListingForm({ property }: Props) {
       parkingSpaces: data.parkingSpaces ? parseInt(data.parkingSpaces) : undefined,
       floorNumber: data.floorNumber ? parseInt(data.floorNumber) : undefined,
       furnishing: data.furnishing || undefined,
-      images: JSON.stringify(images),
+      images: JSON.stringify(allImages),
       amenities: JSON.stringify(selectedAmenities),
       status: saveAsDraft ? "DRAFT" : "PENDING",
     };
@@ -270,21 +289,26 @@ export function ListingForm({ property }: Props) {
               type="button"
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={images.length >= 10 || uploadingCount > 0}
+              disabled={images.length + pendingFiles.length >= 10 || loading}
               className="mb-3 w-full"
             >
-              {uploadingCount > 0 ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t.listing.uploading} ({uploadingCount})</>
-              ) : (
-                <><Upload className="w-4 h-4 mr-2" />{t.listing.uploadImages} ({images.length}/10)</>
-              )}
+              <Upload className="w-4 h-4 mr-2" />{t.listing.uploadImages} ({images.length + pendingFiles.length}/10)
             </Button>
-            {images.length > 0 && (
+            {(images.length > 0 || pendingFiles.length > 0) && (
               <div className="grid grid-cols-3 gap-2">
                 {images.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <div key={`saved-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
                     <img src={img} alt="" className="w-full h-full object-cover" />
                     <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))}
+                      className="absolute top-1 right-1 p-1 bg-white/90 rounded-full shadow hover:bg-white">
+                      <X className="w-3 h-3 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+                {pendingFiles.map((p, i) => (
+                  <div key={`pending-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => removePending(i)}
                       className="absolute top-1 right-1 p-1 bg-white/90 rounded-full shadow hover:bg-white">
                       <X className="w-3 h-3 text-red-500" />
                     </button>
